@@ -1,0 +1,5 @@
+Read the Python file at '$FILE' Add a clear PEP 257-compliant docstring(python)
+ to every function, method, and class that currently lacks one.
+  Do not change any logic, imports, or formatting. 
+  Preserve the original code exactly except for the inserted docstrings. 
+  Overwrite the file in place.

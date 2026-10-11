@@ -1,0 +1,12 @@
+Date, Category ,Amount,Description
+2026-09-01,Food,120.00,groceries
+2026-09-02,transport,45.50,bus pass
+2026-09-03, FOOD ,230.00,restaurant
+2026-09-04,food,abc,typo
+2026-09-05,Entertainment,30.00,movie
+2026-09-06,,12.00,no category
+2026-09-07,Transport,,no amount
+2026-09-08,Transport,-15.00,refund
+2026-09-09,Gifts,0,freebie
+2026-09-10,Utilities,$12.50,bill
+2026-09-11,Transport,74.505,taxi

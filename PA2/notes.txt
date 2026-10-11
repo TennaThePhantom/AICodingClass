@@ -1,0 +1,6 @@
+
+status: showed my Claude Code version, the session name (expense-tracker), working directory, active model Sonnet 5, total session cost ($1.68), and how much of my context window was used (5%).
+
+doctor: Ran a health check on my install and said it was a clean native install with no skills, plugins, MCP servers, or CLAUDE.md files set up, an up-to-date version (2.1.278), and two suggested fix to set auto mode as the default permission mode and reset Claude to get a update.
+
+diff: Told me the current directory is not a git repository, so there were no git changes to show. I should have put it in a GitHub repo.

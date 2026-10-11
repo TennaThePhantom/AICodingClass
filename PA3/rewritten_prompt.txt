@@ -1,0 +1,19 @@
+Context:
+I'm running this code in a repo with a Python file called expenses.py.
+ I want to add missing docstrings to it without changing any logic. 
+ This runs as part of a CI check before PRs.
+
+Task:
+Read expenses.py and add a PEP 257-compliant docstring to every function, method, 
+and class that currently lacks one. Overwrite the file in place.
+
+Format:
+ Return the full Python source only no markdown fences, no preamble, no commentary
+ Docstrings use Google style with Args:, Returns:, and Raises: sections where applicable
+ File is written in place with the same filename
+
+Constraints:
+ Do NOT modify functions, methods, or classes that already have docstrings
+ Preserve all logic, imports, formatting, comments, and blank lines exactly
+ Do not rename anything, do not reorder definitions, do not add type hints
+ Skip nested functions only if they have no parameters and no return value

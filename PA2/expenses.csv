@@ -1,0 +1,10 @@
+date,category,amount,note
+2025-01-03,food,23.50,lunch
+2025-01-04,transport,12.00,bus
+2025-01-05,food,80.00,groceries
+2025-01-06,entertainment,45.00,movie
+2025-01-07,food,15.00,coffee
+2025-01-08,transport,50.00,train
+2025-01-09,entertainment,120.00,concert
+2025-01-10,food,18.00,dinner
+2025-05-01,food,abc,-90.21

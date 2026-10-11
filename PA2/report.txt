@@ -1,0 +1,20 @@
+EXPENSE REPORT
+========================================
+
+Expense Summary
+---------------------------
+entertainment  $    165.00
+food           $    136.50
+transport      $     62.00
+---------------------------
+Total          $    363.50
+
+Budget Status
+---------------------------
+food           $     63.50 remaining
+transport      $     38.00 remaining
+entertainment  $     15.00 OVER BUDGET
+
+Skipped Rows
+--------------------
+- Line 10: invalid amount 'abc'
