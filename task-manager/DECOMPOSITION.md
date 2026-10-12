@@ -2,15 +2,15 @@
 
 ## Feature
 
-A user can set a notification preference: `email`, `sms`, or `none` (default
+A user can set a notification preference - `email`, `sms`, or `none` (default
 `none`). The preference is stored on the `USERS` record. Two new endpoints
 handle read and update, and existing user endpoints must include the new
 field in their responses.
 
-Split into four subagents along layer boundaries: data → service → API → tests.
+Split into four subagents along layer boundaries: data - service - API - tests.
 Each subagent runs in a fresh Claude Code session (`/clear` or relaunch between
-them). `pytest -q` is run after each subagent, and the result is recorded next
-to that subagent's Output field.
+them). `pytest -q` is run after each subagent and the result is recorded next
+to that subagent's Output Field.
 
 ## Subagent table
 
@@ -42,7 +42,7 @@ to that subagent's Output field.
 
 ---
 
-### SA-3: API layer  -  add PATCH and GET notification routes
+### SA-3: API layer  -  add PATCH and GEt notification routes
 
 | Field | Value |
 |---|---|
@@ -71,41 +71,16 @@ to that subagent's Output field.
 ---
 ## Divergence
 
+
+
 ### Did Claude follow the constraint field for every subagent?
 
-Yes  -  all four. SA-1 touched only `services/users.py`, SA-2 touched only
-`services/users.py`, SA-3 touched only `routes/api.py`, and SA-4 created
-only `tests/test_users.py`. No cross-layer edits happened. Each subagent
-also opened with a `pytest -q` baseline run and ended with a second run,
-which matches the pattern established in Task 1. The strongest signal was
-SA-3: it imported `set_notification_pref` and `get_notification_pref` from
-`services.users` and did not re-implement any logic in the route, even
-though the prompt didn't spell out "do not duplicate the service logic."
-It also reused the existing `ValidationError("body", ...)` pattern from
-`update_task_priority_route` without being told to.
+Yes - all four of them. SA-1 touched only `services/users.py`, SA-2 touched only `services/users.py`, SA-3 touched only `routes/api.py`, and SA-4 created only `tests/test_users.py`. No cross-layer edits happened. Each subagent also opened with a `pytest -q` baseline run and ended with a second run, which matches the pattern from Task 1. The strongest signal was SA-3: it imported `set_notification_pref` and `get_notification_pref` from `services.users` and didn't re-implement any logic in the route, even though the prompt didn't spell out do not duplicate the service logic. It also reused the existing `ValidationError("body", ...)` pattern from `update_task_priority_route` without being told to.
 
 ### Did any subagent's output break the next subagent's assumption?
 
-No. SA-1 gave `USERS` records a `notification_pref` key, which SA-2 read
-directly with `user["notification_pref"]`. SA-2 produced two functions
-with the exact names and signatures SA-3 imported. SA-3 registered two
-routes with the exact paths SA-4's tests exercise indirectly through the
-services. The only ordering-sensitive detail was the shared `USERS` dict:
-SA-4 handled it by adding an opt-in `restore_users` fixture (copied from
-`tests/test_tasks.py`'s `restore_tasks`) and by running the suite once
-with `test_users.py` first to confirm no leakage in either direction.
+No SA-1 gave `USERS` records a `notification_pref` key, which SA-2 read directly with `user["notification_pref"]`. SA-2 produced two functions with the exact names and signatures SA-3 imported. SA-3 registered two routes with the exact paths SA-4's tests exercise indirectly through the services The only ordering-sensitive detail was the shared `USERS` dict: SA-4 handled it by adding an opt-in `restore_users` fixture (copied from `tests/test_tasks.py`'s `restore_tasks`) and by running the suite once with `test_users.py` first to confirm no leakage in either direction.
 
 ### Would you write the decomposition differently a second time?
 
-I would keep the four-way split. Running four fresh sessions cost more
-time than a single session would have, but the cost was small compared to
-the benefit: each layer stayed reviewable on its own, and every subagent's
-diff fit in one screen. The one change I would make is that SA-1 and SA-2
-both edited `services/users.py` in separate sessions, which meant SA-2
-had to re-read the file to see SA-1's changes. On a second pass I would
-merge them into one "service layer" subagent, so the file is opened once.
-That said, keeping them separate made the data-shape change (the new key)
-explicit and independently testable before SA-2 built on top of it, so
-the tradeoff is close. Three subagents (services, routes, tests) would
-likely be the sweet spot.
-
+I would keep the four-way split. Running four fresh sessions cost more time than a single session would have, but the cost was small compared to the benefit, each layer stayed reviewable on its own, and every subagent's diff fit in one screen. The one change I would make is that SA-1 and SA-2 both edited `services/users.py` in separate sessions, which meant SA-2 had to re-read the file to see SA-1's changes. On a second pass I would merge them into oneservice layer subagent, so the file is opened once. That said, keeping them separate made the data-shape change the new key explicit and independently testable before SA-2 built on top of it so the tradeoff is close. Three subagents (services, routes, tests) would probably be the sweet spot.
