@@ -50,4 +50,4 @@ edits and inspect the git diff -name-only output failing the session if any
 file outside the declared Output field was touched. That one check would
 catch a cross layer edit, before pytest even runs and It would turn the one
 subagent one layer promise into something the tool verifies instead of
-something I have to notice by reading diffs.
+something I have to notice by reading different lines of code each time.
