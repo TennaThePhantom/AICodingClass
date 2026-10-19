@@ -16,7 +16,7 @@ def test_process_order_valid():
     assert result["done"] is True
 
 def test_process_order_invalid():
-    with pytest.raises(Exception):
+    with pytest.raises(NotFoundError):
         process_order(999)
 
 def test_get_task_valid():
@@ -24,7 +24,7 @@ def test_get_task_valid():
     assert result["title"] == "Write report"
 
 def test_get_task_invalid():
-    with pytest.raises(Exception):
+    with pytest.raises(NotFoundError):
         get_task(999)
 
 def test_get_tasks_for_user_valid():

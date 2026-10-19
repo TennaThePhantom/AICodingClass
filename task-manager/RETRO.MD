@@ -1,53 +1,17 @@
-# RETRO.md - Task 3A: Retrospective
+# RETRO.md 
 
-## 1 Plan Mode value
+## 1 Slash command value
 
-Plan Mode earned its keep in Session 3 of Task 1. I asked claude to make a new
-GET /tasks route that filters by priority, and I amended the plan to say "if
-priority is None, return all tasks. Claude pushed back on my amendment and
-said that checking for none would make ?priority=abc return every task
-instead of a 422, because request.args.get("priority", type=int) returns None
-for both a missing value and a value that isnt a number. So it branched on
-"priority not in request.args" instead, If I had approved my own original
-amendment the route would have had a real bug that would need a revert and a
-replan later. Session 1 had a smaller win too. I amended the plan to add a
-step 0 that runs pytest -q before making changes, and even though claude
-skipped it that time. the step showed up on its own in Sessions 2, 3 and 4, so the amendment from Session 1 shaped how the rest of the sessions went even though it wasn't followed in that one.
+The `/audit_errors` command saved me the most effort. Looking at row 1 of `COMMAND_LOG.md`, running `/audit_errors services/tasks.py` fixed `process_order` and `get_task` in one shot, added the right docstrings, and skipped the six functions that were already fine. The adhoc prompt version would've been like 5-6 messages - "find the raw exceptions," "fix process_order," "add a docstring," "now fix get_task," "make sure you didn't touch the priority validators," "run pytest." The command made it a one-shot because it already had the re-running rule baked in ("skip it, do not rewrite") and the pacing rule ("run pytest after every function"), which are exactly the things I would've had to keep re-explaining every single time.
 
-## 2 Plan Mode limits
+## 2 Hook reliability
 
-The session where the output did not match the amended plan was Session 1.
-I amended the plan to add "Step 0: run pytest -q before any changes When
-claude executed, it ran the tests once at the end and skipped the baseline.
-The plan said one thing and the execution did another. This tells me the
-reliability boundary for Plan Mode is between the plan and the execution
-step. The plan is what you approve, but nothing mechanically enforces every
-step in it. Verification steps like "run tests first" are exactly the kind
-that get quietly dropped when the model is focused on finishing the actual
-change. From Session 2 on I started watching for this and by Session 3 the
-before and after runs were both happening every time without me asking.
+During the Part B bypass attempts, Vector 1 `Utils/errors.py` got bypassed at first not because of case sensitivity, but because my initial path comparison used `os.path.normpath()` to compare a relative pattern, `utils/errors.py` against an absolute path that Claude Code sent (`C:\...\utils\errors.py`). The equality check could never succeed. No protected file was ever actually blocked through Write/Edit even though the hook worked fine in isolated terminal tests. I found a second even more basic bypass, my user settings had `"defaultMode": "auto"` which made Claude Code do writes without calling the PreToolUse hook at all. This shows the gap between "the rule is in settings.json" and "the rule actually gets enforced." A registered hook is not a working hook. Enforcement needs correct invocation (manual mode), correct path resolution (`PROJECT_ROOT` + `realpath` + `normcase`) and correct scope including `Bash` in the matcher.
 
-## 3 Subagent value
+## 3 Advisory vs. deterministic
 
-The subagent boundary that mattered most was SA-3, which kept routes/api.py
-separate from services/users.py. In a single session claude would have had
-every reason to inline the notification preference validation into the route
-handler. The route is the last place the request touches code and its the
-easiest place to just add a quick check. Because SA-3's prompt said "call the
-existing functions as-is, do not modify anything in services/," claude only
-imported set_notification_pref and get_notification_pref and did nothing
-else in the service layer. If I had let claude build the whole notification
-feature in one session the validation rule pref in email, sms none
-would have shown up in both the service and the route, and a later refactor
-would have had to find and fix both copies.
+One rule I left in `CLAUDE.md` and didn't move to the hook is. "Every task must belong to an existing user. Call `get_user(user_id)` at the start of any function that takes a `user_id`" I left this as advice, because a PreToolUse hook can only look at the file path the tool name and the content being written. It can't know whether a function like `create_task(user_id)` actually calls `get_user(user_id)`, before touching the TASKS dict. To move this rule to the hook, I'd need a static analysis hook that parses the Python AST, and checks the function body. I'd do that, if a teammate or I ever shipped code that skipped the check on a user_id path but until then the risk is low enough that a prompt-level rule and the existing tests are enough.
 
-## 4 Gap analysis
+## 4 Limits of hooks
 
-The rule I would most want to enforce mechanically is SA-3's constraint:
-"Do not modify anything in services/ from a subagent whose output is scoped
-to routes/api.py." A hook that enforces this would run after each subagents
-edits and inspect the git diff -name-only output failing the session if any
-file outside the declared Output field was touched. That one check would
-catch a cross layer edit, before pytest even runs and It would turn the one
-subagent one layer promise into something the tool verifies instead of
-something I have to notice by reading different lines of code each time.
+The rule I most wanted to enforce but couldn't implement as a PreToolUse hook is the "no business logic in `routes/api.py`" rule. PreToolUse fires before the tool writes the file but at that point, it only sees the proposed content. It can't reliably tell the difference between route logic reading the request, calling a service and business logic validating priority, filtering lists. Both just look like Python code. The right mechanism for this rule is a combo of a PostToolUse hook, which fires after the write and a linter, or a manual review step. Import the route module, check that each handler function is under N-amount-of-lines and calls exactly one service function, and flag violations for a human to review. PreToolUse is the wrong event, because it runs too early to see the code in context.

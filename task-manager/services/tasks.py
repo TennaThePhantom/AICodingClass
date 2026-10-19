@@ -23,11 +23,37 @@ def _validate_priority(priority: int) -> None:
         raise ValidationError("priority", "must be an integer from 1 to 5")
 
 def process_order(task_id: int) -> dict:
+    """Mark a task as done.
+
+    Args:
+        task_id: The unique identifier for the task.
+
+    Returns:
+        The updated task record.
+
+    Raises:
+        NotFoundError: If no task exists with the given ID.
+    """
+    if task_id not in TASKS:
+        raise NotFoundError("Task")
     task = TASKS[task_id]
     task["done"] = True
     return task
 
 def get_task(task_id: int) -> dict:
+    """Retrieve a task by ID.
+
+    Args:
+        task_id: The unique identifier for the task.
+
+    Returns:
+        The task record as a dictionary.
+
+    Raises:
+        NotFoundError: If no task exists with the given ID.
+    """
+    if task_id not in TASKS:
+        raise NotFoundError("Task")
     return TASKS[task_id]
 
 def create_task(title: str, user_id: int, priority: int = 3) -> dict:
