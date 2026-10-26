@@ -1,0 +1,47 @@
+
+❯ Use the task-db MCP server to call tasks_by_status with status open Show me the raw table output
+
+  Called task-db
+
+Here's the raw output from tasks_by_status with status "open":
+
+ID | Title | Assigned To | Due Date
+---+--------------------+-------------+
+1 | Buy groceries | Alice | 2025-04-10
+3 | Write unit tests | Alice | 2025-04-
+5 | Fix login bug | Bob | 2025-04-15
+
+Three tasks are open. All three due dates are in April 2025, so every one of them is past due.
+
+✻ Brewed for 11s · done 5:17 PM
+
+❯ Now use update_task_status to change task 3 to completed
+
+  Called task-db 2 times
+
+Task 3 ("Write unit tests", Alice) is now marked completed. I checked by listing completed tasks, and it
+shows up there:
+
+ID | Title | Assigned To | Due Date
+---+--------------------+-------------+-----------
+3 | Write unit tests | Alice | 2025-04-
+4 | Call dentist | Bob | 2025-04-15
+
+That leaves tasks 1 and 5 open.
+
+✻ Sautéed for 9s · done 5:27 PM
+
+❯ Now call tasks_by_status with status open again to confirm the change
+
+  Called task-db
+
+The change went through. Task 3 is no longer in the open list:
+
+ID | Title | Assigned To | Due Date
+---+--------------------+-------------+
+1 | Buy groceries | Alice | 2025-04-10
+5 | Fix login bug | Bob | 2025-04-15
+
+Only tasks 1 and 5 are still open.
+
+✻ Worked for 3s · done 5:37 PM

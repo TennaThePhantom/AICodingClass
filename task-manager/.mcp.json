@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-filesystem",
+        "C:/task-manager"
+      ]
+    },
+    "task-db": {
+      "command": "node",
+      "args": [
+        "C:/task-db-server/index.js"
+      ]
+    }
+  }
+}
