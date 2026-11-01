@@ -1,3 +1,5 @@
+"""Task service — task CRUD operations."""
+
 from services.users import get_user
 from utils.errors import NotFoundError, ValidationError
 
