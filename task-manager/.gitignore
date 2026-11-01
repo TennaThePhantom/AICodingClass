@@ -1,0 +1,22 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node
+task-db-server/node_modules/
+node_modules/
+
+# Claude Code worktrees (Week 8)
+.claude/worktrees/
+
+# Local-only settings
+.claude/settings.local.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Backups
+*.bak
