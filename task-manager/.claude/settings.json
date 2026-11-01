@@ -8,6 +8,11 @@
 						"type": "command",
 						"command": "C:/task-manager/.venv/Scripts/python.exe C:/task-manager/.claude/hooks/guard_writes.py",
 						"timeout": 10
+					},
+					{
+						"type": "command",
+						"command": "C:/task-manager/.venv/Scripts/python.exe C:/task-manager/.claude/hooks/guard_git.py",
+						"timeout": 10
 					}
 				]
 			}

@@ -46,3 +46,13 @@ This project uses a PreToolUse hook (`.claude/hooks/guard_writes.py`) registered
 - do not add business logic or `USERS` / `TASKS` access to `routes/api.py`. routes must call `services/users.py` and `services/tasks.py`. this was the SA-3 boundary in the Task 2 notification subagent pipeline
 - do not modify `services/users.py` from a subagent whose scope is `routes/api.py`. cross layer edits break the one subagent one layer decomposition used in Task 2
 - do not create scratch test files outside `tests/`. inline verification with `python -c` or Flask test clients is fine, files are not
+## Git Conventions
+- commit format: `type(scope): subject` or `type: subject`. allowed types: `feat`, `fix`, `test`, `docs`, `refactor`, `chore`, `perf`
+- allowed scopes: `tasks`, `users`, `api`, `tests`, `hooks`, `commands`, `git`
+- subject: lowercase, imperative, no trailing period, max 72 chars
+- branch names: `feat/<scope>-<short-desc>`, `fix/<scope>-<short-desc>`, `chore/<short-desc>`
+- before every commit: run `pytest -q`, must show all passing
+- never push to `main` or `master`
+- never use `git push --force`, `-f`, or `--force-with-lease`
+- never use `--no-verify` on any commit or push
+- never commit `.env`, `.venv/`, `.claude/worktrees/`, or `node_modules/`

@@ -1,0 +1,36 @@
+#!/bin/sh
+# Git commit-msg hook: enforces conventional commit format.
+# Type(scope): subject OR type: subject
+# Allowed types: feat, fix, test, docs, refactor, chore, perf
+# Subject must be ≤ 72 chars total.
+
+COMMIT_MSG_FILE="$1"
+SUBJECT=$(head -n 1 "$COMMIT_MSG_FILE")
+
+# Allow merge commits and revert commits to pass through.
+case "$SUBJECT" in
+  "Merge "*|"Revert "*|"merge: "*|"revert: "*)
+    exit 0
+    ;;
+esac
+
+# Pattern: type(scope): subject  OR  type: subject
+PATTERN='^(feat|fix|test|docs|refactor|chore|perf)(\([a-z]+\))?: .+'
+
+if ! echo "$SUBJECT" | grep -qE "$PATTERN"; then
+  echo "REJECTED: commit subject does not match conventional commit format." >&2
+  echo "  Got: $SUBJECT" >&2
+  echo "  Expected: type(scope): subject  OR  type: subject" >&2
+  echo "  Allowed types: feat, fix, test, docs, refactor, chore, perf" >&2
+  exit 1
+fi
+
+# Length check (whole subject line ≤ 72 chars)
+LEN=$(printf '%s' "$SUBJECT" | wc -c | tr -d ' ')
+if [ "$LEN" -gt 72 ]; then
+  echo "REJECTED: subject is $LEN chars, max is 72." >&2
+  echo "  Got: $SUBJECT" >&2
+  exit 1
+fi
+
+exit 0
