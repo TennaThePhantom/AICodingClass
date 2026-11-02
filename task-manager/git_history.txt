@@ -1,0 +1,16 @@
+*   97e94fc chore: merge keyword search and due dates
+|\  
+| * 9a65ed2 feat(tasks): add optional due dates and overdue filter
+* | a1b9c17 feat(tasks): add keyword search to task listing
+|/  
+* 11dc6fc feat(git): add safety kit and git hooks
+* 2d8fdb3 fixed stuff
+* 5ac31ff fixed stuff
+* 1750bbc chore: untrack __pycache__ files
+* 7eca3b5 docs(tasks): add module docstring to task service
+* def65e4 gitignore
+* 5995dd4 Pa7
+* 38a4411 PA6
+* f692c3a md adjustment
+* 7b9edd0 md adjustments
+* 8c49182 first commit
