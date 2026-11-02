@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from services.tasks import (get_task, create_task, process_order, update_task_priority,
-                            get_all_tasks, get_tasks_by_priority)
+                            get_all_tasks, get_tasks_by_priority, search_tasks)
 from services.users import get_user, get_notification_pref, set_notification_pref
 from utils.errors import AppError, ValidationError
 
@@ -21,6 +21,8 @@ def create_task_route():
 
 @api.route("/tasks", methods=["GET"])
 def list_tasks_route():
+    if "q" in request.args:
+        return jsonify(search_tasks(request.args.get("q", "")))
     if "priority" not in request.args:
         return jsonify(get_all_tasks())
     priority = request.args.get("priority", type=int)

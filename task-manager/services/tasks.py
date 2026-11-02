@@ -123,6 +123,26 @@ def get_tasks_by_priority(priority: int) -> list[dict]:
     _validate_priority(priority)
     return [task for task in TASKS.values() if task["priority"] == priority]
 
+def search_tasks(query: str) -> list[dict]:
+    """Search tasks by keyword in title or description (case-insensitive).
+
+    Args:
+        query: The text to search for. Surrounding whitespace is ignored.
+
+    Returns:
+        A list of task records whose title or description contains the query.
+        Empty if none match.
+
+    Raises:
+        ValidationError: If query is not a string or is empty or whitespace-only.
+    """
+    if not isinstance(query, str) or not query.strip():
+        raise ValidationError("q", "must be a non-empty string")
+    needle = query.strip().casefold()
+    return [task for task in TASKS.values()
+            if needle in task.get("title", "").casefold()
+            or needle in task.get("description", "").casefold()]
+
 def get_tasks_for_user(user_id: int) -> list[dict]:
     """Retrieve all tasks belonging to a user.
 
