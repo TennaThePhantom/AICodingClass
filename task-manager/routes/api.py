@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from services.tasks import (get_task, create_task, process_order, update_task_priority,
-                            get_all_tasks, get_tasks_by_priority, search_tasks)
+                            get_all_tasks, get_tasks_by_priority, search_tasks,
+                            get_overdue_tasks)
 from services.users import get_user, get_notification_pref, set_notification_pref
 from utils.errors import AppError, ValidationError
 
@@ -17,12 +18,23 @@ def get_task_route(task_id):
 @api.route("/tasks", methods=["POST"])
 def create_task_route():
     data = request.get_json()
-    return jsonify(create_task(data["title"], data["user_id"])), 201
+    return jsonify(create_task(data["title"],
+                               data["user_id"],
+                               data.get("priority", 3),
+                               data.get("due_date"))), 201
 
 @api.route("/tasks", methods=["GET"])
 def list_tasks_route():
+    # q takes precedence over other filters (documented in MERGE_REPORT.md)
     if "q" in request.args:
         return jsonify(search_tasks(request.args.get("q", "")))
+
+    overdue = request.args.get("overdue")
+    if overdue not in (None, "true", "false"):
+        raise ValidationError("overdue", "must be true or false")
+    if overdue == "true":
+        return jsonify(get_overdue_tasks())
+
     if "priority" not in request.args:
         return jsonify(get_all_tasks())
     priority = request.args.get("priority", type=int)
@@ -33,7 +45,9 @@ def update_task_priority_route(task_id):
     data = request.get_json(silent=True)
     if not isinstance(data, dict):
         raise ValidationError("body", "must be a JSON object")
-    return jsonify(update_task_priority(task_id, data.get("priority")))
+    return jsonify(update_task_priority(task_id,
+                                        data.get("priority"),
+                                        data.get("due_date")))
 
 @api.route("/users/<int:user_id>", methods=["GET"])
 def get_user_route(user_id):

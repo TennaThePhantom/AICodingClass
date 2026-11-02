@@ -41,6 +41,7 @@ This project uses a PreToolUse hook (`.claude/hooks/guard_writes.py`) registered
 
 ## Do not touch
 - do not change function signatures in `services/tasks.py` or `services/users.py`, callers in `routes/api.py` and `tests/` depend on them
+- Exception: update_task_priority and create_task may add optional trailing parameters (like due_date=None) as long as existing callers remain unbroken.
 - do not bypass `services/` from `routes/api.py`, routes must call services never touch `TASKS` or `USERS` dicts directly
 - do not move the `/api` URL prefix out of `app.py`
 - do not add business logic or `USERS` / `TASKS` access to `routes/api.py`. routes must call `services/users.py` and `services/tasks.py`. this was the SA-3 boundary in the Task 2 notification subagent pipeline
