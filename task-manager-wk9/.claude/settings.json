@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && { \"C:/Users/tenna/Documents/College stuff/coding/AICodingClass/task-manager-wk9/.venv/Scripts/ruff.exe\" check . && \"C:/Users/tenna/Documents/College stuff/coding/AICodingClass/task-manager-wk9/.venv/Scripts/python.exe\" -m pytest -x -q --tb=short; } 1>&2 || exit 2"
+          }
+        ]
+      }
+    ]
+  }
+}
