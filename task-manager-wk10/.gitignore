@@ -5,3 +5,8 @@ __pycache__/
 htmlcov/
 .pytest_cache/
 .ruff_cache/
+
+# Environment files hold secrets; only the template is committed.
+.env
+.env.*
+!.env.example

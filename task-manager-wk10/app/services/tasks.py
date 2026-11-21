@@ -147,7 +147,12 @@ def search_tasks(query):
 
 def tasks_with_tag(tag):
     """Return tasks that carry the given tag, oldest first."""
+    # Escape LIKE wildcards so the tag is matched literally, then bind it as a parameter.
+    escaped = tag.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
     rows = db.session.execute(
-        text(f"SELECT id FROM task WHERE ',' || tags || ',' LIKE '%,{tag},%' ORDER BY id")
+        text(
+            "SELECT id FROM task WHERE ',' || tags || ',' LIKE :pattern ESCAPE '\\' ORDER BY id"
+        ),
+        {"pattern": f"%,{escaped},%"},
     ).all()
     return [db.session.get(Task, row.id) for row in rows]
