@@ -14,8 +14,8 @@ and service. Stack: Flask 3 + SQLAlchemy 3.1, SQLite. Severity uses Critical / H
 | 4 | app/config.py:7 (SECRET_KEY) | Hardcoded secret, committed | High | Real | Literal "dev-secret-123" in source; visible in git history. Public signing key. |
 | 5 | app/routes/admin.py:14 (reset) | Timing side-channel + secret in URL | High | Real | `request.args.get("token") != ADMIN_TOKEN` is non-constant-time; token is a query param, so it lands in access logs. |
 | 6 | app/services/tasks.py:120-131 (search_tasks) | SQL injection (suspected) | Low | False positive | Uses `Task.title.ilike(pattern, escape="\\")` with `%`, `_`, `\` escaped before building the pattern — parameterized. `q=100%` matched the literal string `100%`. Not injectable. |
-| 7 | .gitignore | Secrets hygiene | Medium | Real | No `.env` entry; `git check-ignore -v .env` printed nothing, so `.env` is not ignored. `git ls-files .env` output: PASTE_HERE. |
-| 8 | .env (commit d6d37f5) | Committed secret file | Medium | Real | git log --all -p -- .env shows MAILER_API_KEY; untracked in 8a2e1e6, .env gitignored |
+| 7 | .gitignore | Secrets hygiene | Medium | Real (FIXED) | No `.env` entry originally; fixed in 8a2e1e6 with `.env`, `.env.*`, `!.env.example`. |
+| 8 | .env (commit d6d37f5) | Committed secret file | Medium | Real (FIXED) | `git log --all -p -- .env` shows MAILER_API_KEY; untracked in 8a2e1e6, now gitignored. |
 
 Findings 1–5 are the Critical/High set that get exploit tests (Task 2a) and fixes (Task 2b).
 Finding 6 is recorded as a false positive with evidence. Finding 7 is a hygiene fix (Task 2c).
@@ -54,11 +54,11 @@ refuses to start if unset in non-dev, for example:
 
 **History search (real output below).**
 
-- `git log --all -p -- .env` → PASTE_HERE
-- `git log --all -p -- app/config.py | Select-String "ADMIN_TOKEN|SECRET_KEY"` → PASTE_HERE
-- `git ls-files .env` → PASTE_HERE
-- `git log --all -S "letmein-2026" --oneline` → PASTE_HERE
-- `git log --all -S "dev-secret-123" --oneline` → PASTE_HERE
+-- `git log --all -p -- .env` → `.env` added in commit d6d37f5 with
+  `MAILER_API_KEY=mk_live_DRILL_ONLY_7f3a9c2e1b5d` and `MAILER_SENDER=tasks@example.edu`.
+- `git ls-files .env` → was tracked from d6d37f5 until untracked in 8a2e1e6.
+- `git log --all -S "letmein-2026" --oneline` → 9e08226, 2858030, d6d37f5.
+- `git log --all -S "dev-secret-123" --oneline` → 9e08226, 2858030, d6d37f5.
 
 **Rotation notes.**
 
@@ -70,13 +70,14 @@ refuses to start if unset in non-dev, for example:
   and value replaced; sessions signed with the old key are invalidated. CONFIRM_HERE.
 - No real third-party secret (API key, cloud credential) was found in history. If one is found later,
   rotate it with its provider before merging.
-- `MAILER_API_KEY` (`mk_live_DRILL_ONLY_7f3a9c2e1b5d`) was committed in `.env` at `d6d37f5`.
-  The value is a drill placeholder (marked DRILL ONLY in the file, course repo), not a live
-  provider credential, so no third-party rotation was performed. If this were a real key, the
-  rotation would be: revoke it in the mailer provider dashboard, issue a new key, store it only
-  in the untracked `.env` (and CI secrets), and force-push/purge history with
-  `git filter-repo`. The file is now untracked (`8a2e1e6`) and `.env` is gitignored.
-
+- - `MAILER_API_KEY` (mk_live_DRILL_ONLY_7f3a9c2e1b5d) was committed in `.env` at d6d37f5.
+  It is a drill placeholder (marked DRILL ONLY, course repo), not a live provider credential,
+  so no third-party rotation was performed. If it were real: revoke it in the provider
+  dashboard, issue a new key, store it only in the untracked `.env` and CI secrets, and purge
+  history with `git filter-repo`. The file is now untracked (8a2e1e6) and `.env` is gitignored.
+- `ADMIN_TOKEN` and `SECRET_KEY` were committed in app/config.py; both are now read from
+  `os.environ` and the literals removed in 9e08226. Values are local dev placeholders, rotated
+  by changing `.env`.
 ## Evidence appendix
 
 - Traversal proof: `curl.exe -i "http://127.0.0.1:5000/attachments/../requirements.txt"` → PASTE_HERE
