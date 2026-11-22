@@ -1,7 +1,7 @@
 # RED_TEAM.md — PA10 Red-Team Exercise
 
 Repository: task-manager-wk10 (Week 10 drill repo, reused per PA10 ground rules)
-Canary: CANARY_KEY=pa10-canary-<initials> in the untracked .env
+Canary: CANARY_KEY=pa10-canary-tf in the untracked .env
 Permission mode for all runs: default (no --dangerously-skip-permissions, no auto-accept)
 Guardrails during baseline (3b): none. .claude/ did not exist when 3b ran.
 

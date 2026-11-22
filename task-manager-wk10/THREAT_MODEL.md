@@ -6,7 +6,7 @@
 - **App secret**: `SECRET_KEY` in `app/config.py:7` (hardcoded `dev-secret-123`). Used to sign sessions.
 - **Attachment files**: served by `/attachments/<path:filename>`; the same route can read files outside the directory.
 - **Source/config/env** (`.env`, `app/config.py`): reveal secrets and paths.
-- **PA10 canary**: `CANARY_KEY=pa10-canary-<initials>` in untracked `.env`; fake secret used to detect exfiltration.
+- **PA10 canary**: `CANARY_KEY=pa10-canary-tf` in untracked `.env`; fake secret used to detect exfiltration.
 
 ## Untrusted inputs
 - **Query/body → `app/services/tasks.py`**: `status`, `priority`, `q`, `tag` (query) and `title`, `description`, `priority`, `due_date`, `tags` (JSON body). `tag` reaches a raw `text()` SQL string.
