@@ -1,4 +1,4 @@
-# Security Findings — task-manager (Week 10 drill repo)
+# Security Findings 
 
 Scan run: adapted `/security-scan` in a fresh Claude Code session, then manual review of every route
 and service. Stack: Flask 3 + SQLAlchemy 3.1, SQLite. Severity uses Critical / High / Medium / Low.
@@ -31,7 +31,7 @@ Finding 6 is recorded as a false positive with evidence. Finding 7 is a hygiene 
 - Any Medium/Low the scanner reports that are not in this table are either duplicates of the above or
   out of scope (for example dev-only debug settings); none were left unaddressed without a reason.
 
-## Secrets hygiene (Task 2c)
+## Secrets hygiene
 
 **Source scan.** No secret should live in source. Current violations: `app/config.py:7-8` hardcodes
 `SECRET_KEY` and `ADMIN_TOKEN`. Fix: read both from the environment with a fail-closed default that
@@ -84,3 +84,74 @@ refuses to start if unset in non-dev, for example:
 - SQLi proof: `curl.exe -i "http://127.0.0.1:5000/tasks/tagged?tag=%27%20OR%20%271%27%3D%271"` →
   PASTE_HERE (number of rows returned)
 - False-positive proof: `GET /tasks/search?q=100%25` returns only tasks literally containing `100%`.
+
+## Scan run 
+
+Scope: `app/` (all routes and services), `run.py`, `.gitignore`, git history. Method: source read of
+every route and service, grep sweeps, `git log` history and pickaxe searches, and runtime probes with
+Flask's test client (in-memory SQLite, placeholder `SECRET_KEY`/`ADMIN_TOKEN` set in the probe's own
+environment; probe script kept outside the repo). No source file was modified. Baseline: `pytest -q`
+→ 114 passed.
+
+Limits: the guard hook blocked `git log --all -p -- .env`, and the deny rules block reading
+`.env` / `.env.example`. These were not worked around. History for `.env` is covered by pickaxe
+searches (`git log --all -S`) instead. The `.env.example` contents are taken from the template recorded
+earlier in this file (Secrets hygiene section).
+
+### Findings
+
+| # | File:line | Category | Severity | Real / FP | How checked |
+|---|-----------|----------|----------|-----------|-------------|
+| S1 | app/routes/admin.py:18-20 + app/config.py:14 | Auth — empty token bypass on destructive route | High | Real | "Fail closed" only covers an *unset* var: `os.environ["ADMIN_TOKEN"]` accepts `""`. `request.args.get("token", "")` then defaults to `""`, and `compare_digest(b"", b"")` is True. The `.env.example` template ships `ADMIN_TOKEN=` empty, so copying it verbatim enables this. Probe with `ADMIN_TOKEN=""`: `POST /admin/reset` with **no token** → `200 {"deleted":3}`. |
+| S2 | run.py:8 | Unsafe exec — Werkzeug debugger exposed | High | Real (dev entrypoint, but it is the documented `python run.py`) | `app.run(debug=True, host="0.0.0.0")` serves the interactive debugger on every interface. Its console runs arbitrary Python (it is PIN-gated, but a reachable PIN is the only barrier). Debug mode also returns full tracebacks with source lines. These are easy to trigger with the 500s in S5–S8. |
+| S3 | app/routes/admin.py:18 | Auth — token in query string | Medium | Real | Token read only from `request.args`. It lands in access logs, proxy logs and browser history. Probe: a valid token sent in an `X-Admin-Token` header → 403 (headers ignored). The constant-time compare itself is correct (see safe list). |
+| S4 | git history d6d37f5 (app/config.py:7-8, `.env`) | Secrets in history — rotation unverified | Medium | Real | `git log --all -S "letmein-2026"` and `-S "dev-secret-123"` → d6d37f5, 2858030, 9e08226, 0d2e792. `-S "MAILER_API_KEY"` → d6d37f5, 8a2e1e6 and others. The literals are gone from source but remain in history. The rotation notes above still say `CONFIRM_HERE`. This scan could not verify that the current values differ (reading the env file is blocked). Action: confirm the values changed, then remove the placeholders. |
+| S5 | app/services/tasks.py:60, :98 | Input validation — `description` not type-checked | Low | Real | `(description or "").strip()` on a non-str. Probe: `POST /tasks {"title":"t","description":5}` → 500 `AttributeError`. `PATCH /tasks/1 {"description":["x"]}` → 500. |
+| S6 | app/services/tasks.py:31 | Input validation — `_validate_status` crashes on unhashable input | Low | Real | `LEGACY_ALIASES.get(status, ...)` with a list or dict raises `TypeError` before the membership check. Probe: `PATCH /tasks/1 {"status":["todo"]}` → 500, and the same for `{"a":1}`. |
+| S7 | app/services/tasks.py:48-53 | Input validation — `_clean_tags` type and length | Low | Real | Int → 500 (`'int' object is not iterable`). A dict is accepted, and its keys become tags. There is no length cap: `tags:["x"*300]` → 201 even though the column is `String(200)`, because SQLite does not enforce the length. |
+| S8 | app/routes/tasks.py:50-51 | Input validation — non-object JSON body | Low | Real | `update_task(task_id, **data)` with a JSON array body → 500 `TypeError`. |
+| S9 | app/services/tasks.py:15-18 | Input validation — `title` coerced with `str()` | Low | Real (cosmetic) | `POST /tasks {"title":{"a":1}}` → 201 with title `"{'a': 1}"`. Non-string types are not rejected. |
+
+S5–S9 are availability and data-quality issues, not data exposure. Each one returns an unhandled 500 or
+stores coerced data instead of a `ValidationError`/400.
+
+### Checked and found safe
+
+- **SQLi — `tasks_with_tag` (app/services/tasks.py:148-158).** This is the only raw SQL in `app/`
+  (grep for `text(`, `.execute(`, `SELECT`, `exec_driver_sql` → only tasks.py:152-154). It uses the
+  bound `:pattern` parameter with `ESCAPE '\'`, and `%`, `_`, `\` are escaped first. Probes:
+  `tag=' OR '1'='1` → `[]`, `tag=%` → `[]`, `tag=_` → `[]`, `tag=x` → only the tagged task.
+- **SQLi — `search_tasks` (app/services/tasks.py:126-145).** It uses the ORM `ilike(..., escape="\\")`
+  with metacharacters escaped. Probes: `q=' OR 1=1--` → `[]`, `q=%` → `[]`.
+- **Other DB access.** `list_tasks`, `get_task`, `update_task`, `delete_task` and `task_summary` use
+  only ORM `filter_by`, `session.get` and `query.all`. Nothing user-controlled reaches raw SQL.
+- **Path traversal — app/routes/attachments.py:10-22.** It uses `realpath` + `commonpath` confinement,
+  with a `ValueError` guard for cross-drive paths. Probes, all 404: `../requirements.txt`,
+  `..%2frequirements.txt`, `..%2F..%2Frun.py`, `%2e%2e/run.py`, `..\requirements.txt`,
+  `C:/Windows/win.ini`, `../attachments_evil/x` (sibling-prefix trick). `//etc/passwd` → 308 slash
+  merge, not a read. `welcome.txt` and `subdir/../welcome.txt` → 200 (stay inside the directory).
+- **Hardcoded secrets in current source.** `app/config.py:13-14` reads both values from `os.environ`.
+  A grep of non-doc, non-test files for secret/token/api_key/password/known literals found no
+  literals. `git ls-files` does not list the env file, and `.gitignore:10-12` covers it and its
+  variants (template excepted).
+- **Timing — app/routes/admin.py:20.** It uses `hmac.compare_digest` on bytes, so it is constant-time.
+  A non-ASCII token (`%C3%A9`) → 403 with no crash. Wrong token → 403. The remaining auth issues are
+  S1 and S3.
+- **Validators applied on every create/update path.**
+  - Create (tasks.py:56-67) applies `_validate_title`, `_validate_priority`, `_parse_due_date` and
+    `_clean_tags`. Status cannot be set on create, so a sent `status` is ignored and the default
+    `todo` is kept.
+  - Update (tasks.py:88-108) applies all five validators per field. Unknown fields are rejected by
+    `UPDATABLE_FIELDS`: probe `PATCH {"id":99}` → 400, so there is no mass assignment.
+  - List (tasks.py:78-85) validates the `status` and `priority` query params: probes → 400.
+  - The only gaps are the type-handling cases S5–S9.
+- **Unsafe deserialization and templating — checked, none found.** A grep for `pickle`, `yaml`,
+  `eval(`, `exec(`, `marshal`, `shelve`, `render_template`, `Markup`, `|safe`, `subprocess` and
+  `os.system` across all non-doc files found nothing in `app/` or `run.py`. The only hit is
+  `subprocess` in `tests/test_guard.py`, which is test-only. There is no `app/templates/` directory.
+  All responses go through `jsonify` or `send_file`. Files checked: app/__init__.py, config.py,
+  errors.py, extensions.py, models.py, routes/{tasks,admin,attachments,stats}.py,
+  services/{tasks,stats}.py, run.py. The one code-execution risk in this category is the
+  debugger (S2).
+- **app/routes/stats.py / app/services/stats.py.** These take no user input and do read-only ORM
+  aggregation.
