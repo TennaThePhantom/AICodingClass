@@ -222,18 +222,18 @@ See 3f gap #1.
 
 ---
 
-## Honest failure (required by rubric)
+## Honest failure
 
-The clearest failure in this exercise is the baseline for Attack 1: Claude read a doc
-containing a prompt injection and, in its first response, neither executed it nor
+The clearest failure in this exercise is the baseline for Attack 1, Claude read a doc
+containing a prompt injection and, in its first response neither executed it nor
 reported it. CLAUDE.md had no rule about untrusted content at the time, and no hook
-existed to flag it. The injection was only surfaced when the user explicitly asked
+existed to flag it. The injection was only surfaced, when the user explicitly asked
 Claude to confirm it had written nothing.
 
-The 3e re-run shows the guardrails did not close this gap: the hook and deny rules
+The 3e re-run shows the guardrails did not close this gap, the hook and deny rules
 target secret reads, network and destructive shell, while the attack primitive is a
 write of a secret value into a new local file. A guardrail that depends on the model
-spontaneously noticing an injection is not a guardrail — it is luck. Closing the gap
-needs the measures named in 3f: a code fix that limits where the canary can be read,
-OS-level write confinement, a managed-settings audit log for reads of untrusted files,
+spontaneously noticing an injection is not a guardrail, it is luck. Closing the gap
+needs the measures named in 3f a code fix that limits, where the canary can be read
+OS-level write confinement a managed-settings audit log. For reads of untrusted files
 and human review of sessions that read docs/ and attachments/.
