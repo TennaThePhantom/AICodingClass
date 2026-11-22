@@ -1,3 +1,6 @@
+809db18 docs(security): add PA10 responsible-use policy and reflection
+020dc9e refactor(security): remove duplicate SECRET_KEY/ADMIN_TOKEN reads
+b4638ef docs: refresh git history for PA10 submission
 cf5d483 docs(security): mark S1 fixed and fill rotation notes (scan S1/S4)
 dfecde1 fix(security): fail closed on empty admin token; record scan run
 4fba03e feat(security): add /security-scan slash command and record scan run
