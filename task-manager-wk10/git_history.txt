@@ -1,3 +1,14 @@
+cf5d483 docs(security): mark S1 fixed and fill rotation notes (scan S1/S4)
+dfecde1 fix(security): fail closed on empty admin token; record scan run
+4fba03e feat(security): add /security-scan slash command and record scan run
+997b9b7 docs(redteam): add full PA10 red-team report (3a-3f_
+3842d0a feat(security): add PA10 PreToolUse guard hook and subprocess tests
+c2698d4 docs: add PA10 red-team report 3a-3b baseline; 3e-3f pending guardrails
+e48020a chore(security): add PA10 deny rules and redteam payload files"
+c21d742 docs(security): fill real history-search evidence and rotation notes
+0d2e792 docs(security): add threat model and findings triage for PA10
+614bd92 chore(security): load secrets from .env via python-dotenv
+fbb1554 docs: record git history for PA10
 8a2e1e6 chore(security): stop tracking .env; add .env.example
 9e08226 fix(security): remediate PA10 critical/high findings
 2858030 test(security): add failing exploit tests for PA10 findings 1-5
