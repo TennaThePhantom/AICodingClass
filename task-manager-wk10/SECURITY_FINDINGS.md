@@ -62,14 +62,13 @@ refuses to start if unset in non-dev, for example:
 
 **Rotation notes.**
 
-- `ADMIN_TOKEN` ("letmein-2026") was committed in `app/config.py`. It is a course/demo token, not a
-  live provider credential, so there is no third-party rotation. Rotation performed: value moved to
-  the `ADMIN_TOKEN` environment variable, the hardcoded literal removed from `app/config.py`, and the
-  token value changed so the old string no longer works. CONFIRM_HERE.
-- `SECRET_KEY` ("dev-secret-123") was committed. Rotation performed: moved to the `SECRET_KEY` env var
-  and value replaced; sessions signed with the old key are invalidated. CONFIRM_HERE.
-- No real third-party secret (API key, cloud credential) was found in history. If one is found later,
-  rotate it with its provider before merging.
+- `ADMIN_TOKEN` ("letmein-2026") was committed in app/config.py at d6d37f5. It is a
+  course/demo token, not a live provider credential, so there is no third-party rotation.
+  Rotation performed: the literal was removed in 9e08226, the value now comes from the
+  untracked .env, and the current value differs from "letmein-2026".
+- `SECRET_KEY` ("dev-secret-123") was committed in app/config.py at d6d37f5. Rotation
+  performed: removed in 9e08226, now read from the untracked .env; the current value
+  differs from "dev-secret-123", which invalidates any sessions signed with the old key.
 - - `MAILER_API_KEY` (mk_live_DRILL_ONLY_7f3a9c2e1b5d) was committed in `.env` at d6d37f5.
   It is a drill placeholder (marked DRILL ONLY, course repo), not a live provider credential,
   so no third-party rotation was performed. If it were real: revoke it in the provider
@@ -102,7 +101,7 @@ earlier in this file (Secrets hygiene section).
 
 | # | File:line | Category | Severity | Real / FP | How checked |
 |---|-----------|----------|----------|-----------|-------------|
-| S1 | app/routes/admin.py:18-20 + app/config.py:14 | Auth — empty token bypass on destructive route | High | Real | "Fail closed" only covers an *unset* var: `os.environ["ADMIN_TOKEN"]` accepts `""`. `request.args.get("token", "")` then defaults to `""`, and `compare_digest(b"", b"")` is True. The `.env.example` template ships `ADMIN_TOKEN=` empty, so copying it verbatim enables this. Probe with `ADMIN_TOKEN=""`: `POST /admin/reset` with **no token** → `200 {"deleted":3}`. |
+| S1 | app/routes/admin.py:18-20 + app/config.py:14 | Auth — empty token bypass on destructive route | High | Real (FIXED, dfecde1) | With ADMIN_TOKEN="" the app started because os.environ[...] rejects unset but accepts "". `request.args.get("token", "")` then defaulted to "", and compare_digest(b"", b"") is True, so POST /admin/reset with no token deleted every row. Fixed in dfecde1: config.py raises RuntimeError when SECRET_KEY or ADMIN_TOKEN is empty; test_security.py asserts it. |
 | S2 | run.py:8 | Unsafe exec — Werkzeug debugger exposed | High | Real (dev entrypoint, but it is the documented `python run.py`) | `app.run(debug=True, host="0.0.0.0")` serves the interactive debugger on every interface. Its console runs arbitrary Python (it is PIN-gated, but a reachable PIN is the only barrier). Debug mode also returns full tracebacks with source lines. These are easy to trigger with the 500s in S5–S8. |
 | S3 | app/routes/admin.py:18 | Auth — token in query string | Medium | Real | Token read only from `request.args`. It lands in access logs, proxy logs and browser history. Probe: a valid token sent in an `X-Admin-Token` header → 403 (headers ignored). The constant-time compare itself is correct (see safe list). |
 | S4 | git history d6d37f5 (app/config.py:7-8, `.env`) | Secrets in history — rotation unverified | Medium | Real | `git log --all -S "letmein-2026"` and `-S "dev-secret-123"` → d6d37f5, 2858030, 9e08226, 0d2e792. `-S "MAILER_API_KEY"` → d6d37f5, 8a2e1e6 and others. The literals are gone from source but remain in history. The rotation notes above still say `CONFIRM_HERE`. This scan could not verify that the current values differ (reading the env file is blocked). Action: confirm the values changed, then remove the placeholders. |
@@ -155,3 +154,10 @@ stores coerced data instead of a `ValidationError`/400.
   debugger (S2).
 - **app/routes/stats.py / app/services/stats.py.** These take no user input and do read-only ORM
   aggregation.
+
+### Fixes applied after the scan
+
+- S1 (High): app/config.py now raises RuntimeError if SECRET_KEY or ADMIN_TOKEN is empty,
+  not just unset. Proof: `$env:ADMIN_TOKEN=""; python -c "import app.config"` exits non-zero
+  with "SECRET_KEY and ADMIN_TOKEN must be set and non-empty". Covered by
+  tests/test_security.py::test_empty_admin_token_fails_closed (commit <hash>).
